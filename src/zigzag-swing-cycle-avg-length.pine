@@ -1,0 +1,71 @@
+// This Pine Script® code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// @version=6
+// © chaise_cogent + https://www.tradingview.com/script/bzIRuGXC-ZigZag/$0
+indicator("ZigZag Swing Cycle Average", overlay=true)
+
+// This code tried to be written using the recommendations from the Pine Script® User Manual's Style Guide:
+// https://www.tradingview.com/pine-script-docs/writing/style-guide/
+// but failed eventually
+
+import TradingView/ZigZag/8 as zlib
+
+devThreshold    = input.float(3.0, 'Deviation threshold %')
+depth           = input.int(12, 'Depth')
+allowExtendLast = input.bool(false, 'Allow last in-progress leg')
+showZigZag      = input.bool(true, 'Show ZigZag')
+lineColor       = input.color(color.blue, 'Line color')
+settings        = zlib.Settings.new(
+      devThreshold = devThreshold, depth = depth, lineColor = lineColor, 
+      extendLast = allowExtendLast, displayReversalPrice = true, displayCumulativeVolume = false,
+      displayReversalPriceChange = true, differencePriceMode = "Percent", draw = showZigZag, allowZigZagOnOneBar = true)
+
+var zlib.ZigZag zigZag = zlib.newInstance(settings)
+
+var float upward_avg           = 0
+var float downward_avg         = 0
+var int   upward_bar_sum       = 0
+var int   upward_cycle_count   = 0
+var int   downward_bar_sum     = 0
+var int   downward_cycle_count = 0
+
+zlib.update(zigZag)
+
+var resultsTable = table.new(position.bottom_right, 4, 3, frame_width  = 1, border_width = 1, border_color = color.gray, bgcolor = color.white)
+
+array<zlib.Pivot> pivots = zigZag.pivots
+
+if barstate.islast
+    for [index, pivot] in pivots
+        int bar_count_difference = pivot.end.index - pivot.start.index
+        if index <= array.size(pivots) - (allowExtendLast ? 1 : 2)
+            log.info(
+               'i={0}, bar-start{1}, bar-end={2}, px-start={3}, px-end={4}', 
+               index, pivot.start.index, pivot.end.index, pivot.start.price, pivot.end.price
+               )
+            // Upward trend
+            if pivot.start.price < pivot.end.price
+                upward_bar_sum := upward_bar_sum + bar_count_difference
+                upward_cycle_count += 1
+            // Downward trend
+            else
+                downward_bar_sum := upward_bar_sum + bar_count_difference
+                downward_cycle_count += 1
+    
+    upward_avg := upward_bar_sum / upward_cycle_count
+    downward_avg := downward_bar_sum / downward_cycle_count
+
+    table.clear(resultsTable, 0, 0, 3, 2)
+    table.cell(resultsTable, 0, 0, 'Direction', text_formatting = text.format_bold)
+    table.cell(resultsTable, 1, 0, 'Avg Cycle Len', text_formatting = text.format_bold)
+    table.cell(resultsTable, 2, 0, 'Total Bars', text_formatting = text.format_bold)
+    table.cell(resultsTable, 3, 0, 'Cycles', text_formatting = text.format_bold)
+    table.cell(resultsTable, 0, 1, 'Up', text_formatting = text.format_bold)
+    table.cell(resultsTable, 0, 2, 'Down', text_formatting = text.format_bold)
+
+    table.cell(resultsTable, 1, 1, str.tostring(math.round(upward_avg, 0)))
+    table.cell(resultsTable, 2, 1, str.tostring(upward_bar_sum))
+    table.cell(resultsTable, 3, 1, str.tostring(upward_cycle_count))
+
+    table.cell(resultsTable, 1, 2, str.tostring(math.round(downward_avg, 0)))
+    table.cell(resultsTable, 2, 2, str.tostring(downward_bar_sum))
+    table.cell(resultsTable, 3, 2, str.tostring(downward_cycle_count))
