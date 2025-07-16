@@ -15,3 +15,7 @@ Traders can use this data to:
 - Understand the typical duration of bullish vs. bearish moves
 - Evaluate whether a trend is extended or premature
 - Build time-aware entries or exits based on historical pattern lengths.
+
+## Example
+
+<img src="./zigzag-swing-cycle-avg-length.png" alt="ETH chart showing average (a) Upward cycle length of 13 bars, and (b) Downward cycle length of 11 bars in 1-week chart">
