@@ -1,4 +1,7 @@
 # ZigZag swing cycle average length
+
+[The script](./zigzag-swing-cycle-avg-length.pine)
+
 ## OVERVIEW
 
 This indicator calculates the average number of bars in upward and downward trends, based on ZigZag pivot logic. It uses [TradingView’s official ZigZag library](https://www.tradingview.com/script/bzIRuGXC-ZigZag) to identify significant turning points and isolates completed legs to measure trend durations. An on-chart table displays average trend length, total bars, and pivot count.
