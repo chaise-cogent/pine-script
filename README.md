@@ -2,4 +2,4 @@
 
 Code is on the [/src](/src/) folder:
 
-- [ZigZag Swing Cycle length counter](./src/zigzag-swing-cycle-avg-length.md)
+- [ZigZag Swing Cycle average length counter](./src/zigzag-swing-cycle-avg-length.md)
