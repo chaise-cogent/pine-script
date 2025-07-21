@@ -48,7 +48,7 @@ if barstate.islast
                 upward_cycle_count += 1
             // Downward trend
             else
-                downward_bar_sum := upward_bar_sum + bar_count_difference
+                downward_bar_sum := downward_bar_sum + bar_count_difference
                 downward_cycle_count += 1
     
     upward_avg := upward_bar_sum / upward_cycle_count
