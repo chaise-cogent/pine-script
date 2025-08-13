@@ -1,0 +1,108 @@
+// License MIT
+// This script is still educational and in WORK IN PROGRESS (WIP) mode
+// @version=6
+// @author chaise_cogent
+
+indicator("MACD Divergence ", shorttitle="MACD-Div")
+
+short_length = input.int(5, title = 'Fast length', minval = 1)
+long_length = input.int(34, title = 'Slow length', minval = 1)
+signal_length = input.int(9, title = 'Signal length')
+pivot_point_length = input.int(5, title='Pivot Point Length', minval = 1)
+is_check_cut_through = input.bool(false, title = 'Check cut-through?')
+src = close
+
+// cut-through above higher straigt line
+is_below_upper_cut(float indicator, int len) =>
+    _result = true
+    trend = indicator - (indicator - nz(indicator[len])) / len
+    for x = 1 to len -1
+        if nz(indicator[x]) > trend[x]
+            _result := false
+            break
+    _result
+
+// cut-through below lower straight line
+is_above_lower_cut(float indicator, int len) =>
+    _result = true
+    trend = indicator - (indicator - nz(indicator[len])) / len
+    for x = 1 to len -1
+        if nz(indicator[x]) < trend[x]
+            _result := false
+            break
+    _result
+
+peak = ta.pivothigh(high, pivot_point_length, 1) // look-forward 1 bar
+trough = ta.pivotlow(low, pivot_point_length, 1) // look-forward 1 bar
+
+bars_since_peak = 0
+bars_since_peak := na(peak) ? nz(bars_since_peak[1]) + 1 : pivot_point_length
+bars_since_trough = 0
+bars_since_trough := na(trough) ? nz(bars_since_trough[1]) + 1 : pivot_point_length
+
+// Negative Divergence - possible higher highs
+local_top = ta.pivothigh(high, pivot_point_length, 1) // look-forward 1 bar
+empty_high = true
+if not na(local_top) and local_top > high[bars_since_peak] // close price must not be higher than the line between last pivot high and current high
+    trend_line = local_top - (local_top - high[bars_since_peak]) / bars_since_peak
+    for x = 1 to bars_since_peak - 1
+        if close[x] > trend_line[x]
+            empty_high := false
+            break
+else
+    empty_high := false
+
+// Positive Divergence - possible lower lows
+local_bottom = ta.pivotlow(low, pivot_point_length, 1) // look-forward 1 bar
+empty_low = true
+if not na(local_bottom) and local_bottom < low[bars_since_trough] // close low price must not be lower than the line between last pivot low and current low
+    trend_line = (local_bottom - low[bars_since_trough]) / bars_since_trough
+    for x = 1 to bars_since_trough - 1
+        if close[x] < trend_line[x]
+            empty_low := false
+            break
+else
+    empty_low := false
+
+
+calc_divergence(indicator, isok) =>
+    // Returns -1 for negative, 1 for positive and 0 if no divergence
+    _result = 0
+
+    // Check for positive
+    if
+      empty_low and
+      not na(local_bottom)
+      and indicator[bars_since_trough] < indicator
+      and (not is_check_cut_through or isok)
+        _result := 1
+    // Check for negative
+    else if
+      empty_high and
+      not na(local_top) and
+      indicator[bars_since_peak] > indicator
+      and (not is_check_cut_through or isok)
+        _result := -1
+
+    _result
+
+[macd, macd_signal, _] = ta.macd(src, short_length, long_length, signal_length)
+macd_ok_below = is_below_upper_cut(macd, bars_since_peak)
+macd_ok_above = is_above_lower_cut(macd, bars_since_trough)
+
+divergence =
+  calc_divergence(macd, macd_ok_above) + calc_divergence(macd, macd_ok_below) // possibly to sum up other indicatorcators
+
+hline(0, color = color.gray, linestyle = hline.style_dotted)
+plot(macd, title='MACD', color=color.green)
+plot(macd_signal, title='Signal', color=color.yellow)
+
+plotchar(divergence > 0 ? high * 1.12 : na, char='↑', color=color.new(color.green, 20), title="Positive Divergence", location=location.absolute, size=size.small, force_overlay=true)
+plotchar(divergence < 0 ? low * 0.95 : na, char='↓', color=color.new(color.red, 20), title="Negative Divergence", location=location.absolute, size=size.small, force_overlay=true)
+
+// plotshape(empty_high, color=color.lime, location=location.top, title='empty high')
+// plotshape(empty_low, color=color.maroon, location=location.bottom, title='empty low')
+// plotshape(peak, color=color.blue, style=shape.triangleup, title='Peak', location=location.abovebar, force_overlay = true)
+// plotshape(trough, color=color.orange, style=shape.triangledown, title='Trough', location=location.belowbar, force_overlay = true)
+// plotshape(local_top, color=color.navy, location=location.top, title='loc.top', force_overlay = true)
+// plotshape(local_bottom, color=color.maroon, location=location.bottom, title='loc.bott', force_overlay = true)
