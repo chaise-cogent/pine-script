@@ -9,7 +9,7 @@ short_length = input.int(5, title = 'Fast length', minval = 1)
 long_length = input.int(34, title = 'Slow length', minval = 1)
 signal_length = input.int(9, title = 'Signal length')
 pivot_point_length = input.int(5, title='Pivot Point Length', minval = 1)
-is_check_cut_through = input.bool(false, title = 'Check cut-through?')
+is_check_cut_through = input.bool(true, title = 'Check cut-through?')
 src = close
 
 // cut-through above higher straigt line
