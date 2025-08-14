@@ -3,4 +3,4 @@
 Code is on the `src` folder:
 
 - [ZigZag Swing Cycle average length counter](./src/zigzag-swing-cycle-avg-length.md)
-- [MACD with divergence](./src/macd-divergence.pine)
+- [MACD with divergence + Leader](./src/macd-divergence.pine)
