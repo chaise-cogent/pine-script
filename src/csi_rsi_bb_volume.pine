@@ -1,0 +1,62 @@
+// This Pine Script® code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// Idea of negrbluad https://habr.com/ru/articles/934602/
+// © chaise_cogent
+
+//@version=6
+indicator("CSI based on RSI, BB and Vol", overlay = false)
+
+rsi_threshold = input.float(60, 'RSI % threshold')
+csi_threshold = input.float(15, 'CSI % cut threshold')
+csi_length = input.int(1, 'CSI MA length')
+bb_length = input.int(14, 'Bollinger length')
+bb_mult = input.float(1.8, 'Bollinger multiplicator', step = 0.1)
+
+CSI_PERCENTILE_LENGTH = 100 // Why?
+RSI_LENGTH = 450
+
+calc_csi() =>
+    _PRICE_LENGTH = 30 // Why?
+    _VOLUME_LENGTH = 50 // Why?
+    _ATR_LENGTH = 14 // Why?
+    _body = math.abs(close - open)
+    _height = high - low
+    _height_na = _height == 0 ? na : _height
+    _body_ratio = _body / _height_na
+    _direction = close > open ? 1 : -1
+    _volume_score = volume / ta.highest(volume, _VOLUME_LENGTH)
+    _range_z_score = _height_na / ta.stdev(_height_na, _PRICE_LENGTH)
+    _tr = math.max(_height, math.abs(high - close[1]), math.abs(low - close[1]))
+    _atr = ta.median(_tr, _ATR_LENGTH)
+    csi = _direction * (0.5 * _body_ratio + 0.3 * _volume_score + 0.2 * _range_z_score) / _atr
+
+ind_rsi = ta.rsi(close, RSI_LENGTH)
+ind_csi = ta.sma(calc_csi(), csi_length)
+[ bb_mid, bb_upper, bb_lower ] = ta.bb(close, bb_length, bb_mult)
+
+csi_bull_threshold = ta.percentile_nearest_rank(ind_csi, CSI_PERCENTILE_LENGTH, 100 - csi_threshold)
+csi_bear_threshold = ta.percentile_nearest_rank(ind_csi, CSI_PERCENTILE_LENGTH, csi_threshold)
+
+// Sentiments: Bull vs Bear
+csi_bull_sentiment = ind_csi > 0 and ind_csi > csi_bull_threshold and ind_csi > ind_csi[1]
+csi_bear_sentiment = ind_csi < 0 and ind_csi < csi_bear_threshold and ind_csi < ind_csi[1]
+
+rsi_bull_sentiment = ind_rsi < rsi_threshold
+rsi_bear_sentiment = ind_rsi > (100 - rsi_threshold)
+
+bb_bull_sentiment = close < bb_lower
+bb_bear_sentiment = close > bb_upper
+
+// Result
+is_bull = bb_bull_sentiment and csi_bull_sentiment and rsi_bull_sentiment
+is_bear = bb_bear_sentiment and csi_bear_sentiment and rsi_bear_sentiment
+
+// Indicator and Bollinger Bands
+plotshape(is_bull, style=shape.triangleup, color = color.green, location = location.belowbar, size = size.small, force_overlay = true, title = 'Long')
+plotshape(is_bear, style=shape.triangledown, color = color.red, location = location.abovebar, size = size.small, force_overlay = true, title = 'Short')
+plot(bb_lower, color=color.new(color.green, 40), force_overlay = true, title = 'Bollinger lower')
+plot(bb_upper, color=color.new(color.red, 40), force_overlay = true, title = 'Bollinger higher')
+
+// CSI
+plot(ind_csi, title = 'CSI')
+plot(csi_bull_threshold, title = 'CSI high threshold', color = color.red)
+plot(csi_bear_threshold, title = 'CSI low threshold', color = color.green)
