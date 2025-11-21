@@ -1,48 +1,55 @@
 // This Pine Script® code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
 // © chaise_cogent
 //
-// Script version = 1.0
+// Script version = 2.0
 // The script slides start date of 1-WEEK candles to the specified number of days BACKWARD
 // For example, "shift_days = 1" means that candles start on Sunday and the last day is Monday
 
 //@version=6
-indicator("Week candle backward shift", overlay=false)
+indicator("Week candle backward shift", overlay=false, max_bars_back = 20)
 
-shift_days = input.int(0, title = "Days to shift backward", minval=0, maxval=6)
+var shift_days = input.int(0, title = "Days to shift backward", minval=0, maxval=6)
 bull_color = input.color(color.new(color.green, 20), title = "Bullish Candle")
 bear_color = input.color(color.new(color.red, 20), title = "Bearish Candle")
 
 var int start_day_index = dayofweek + shift_days + 1
 var int end_day_index = start_day_index - 6
 
-var int last_candle_week_length = if dayofweek == dayofweek.monday
+var int last_candle_week_length = if dayofweek(timenow) == dayofweek.monday
     shift_days + 1
-else if dayofweek == dayofweek.tuesday
+else if dayofweek(timenow) == dayofweek.tuesday
     shift_days + 2
-else if dayofweek == dayofweek.wednesday
+else if dayofweek(timenow) == dayofweek.wednesday
     shift_days + 3
-else if dayofweek == dayofweek.thursday
+else if dayofweek(timenow) == dayofweek.thursday
     shift_days + 4
-else if dayofweek == dayofweek.friday
+else if dayofweek(timenow) == dayofweek.friday
     shift_days + 5
-else if dayofweek == dayofweek.saturday
+else if dayofweek(timenow) == dayofweek.saturday
     shift_days + 6
-else if dayofweek == dayofweek.sunday
+else // SUNDAY
     shift_days + 7
 
-var int last_candle_start_index = if dayofweek == dayofweek.monday
+var int last_candle_start_index = if dayofweek(timenow) == dayofweek.monday
+    log.info('start ind MON day={0} result={1}', time_close(timeframe.period), shift_days + 0)
     shift_days + 0
-else if dayofweek == dayofweek.tuesday
+else if dayofweek(timenow) == dayofweek.tuesday
+    log.info('start ind TUE day={0} result={1}', dayofweek, shift_days + 1)
     shift_days + 1
-else if dayofweek == dayofweek.wednesday
+else if dayofweek(timenow) == dayofweek.wednesday
+    log.info('start ind WEN day={0} result={1}', dayofweek, shift_days + 2)
     shift_days + 2
-else if dayofweek == dayofweek.thursday
+else if dayofweek(timenow) == dayofweek.thursday
+    log.info('start ind TH day={0} result={1}', dayofweek, shift_days + 3)
     shift_days + 3
-else if dayofweek == dayofweek.friday
+else if dayofweek(timenow) == dayofweek.friday
+    log.info('start ind FR day={0} result={1}', dayofweek, shift_days + 4)
     shift_days + 4
-else if dayofweek == dayofweek.saturday
+else if dayofweek(timenow) == dayofweek.saturday
+    log.info('start ind SA day={0} result={1}', dayofweek, shift_days + 5)
     shift_days + 5
-else if dayofweek == dayofweek.sunday
+else // SUNDAY
+    log.info('start ind SU day={0} result={1}', dayofweek, shift_days + 6)
     shift_days + 6
 
 dailyOpen = request.security(syminfo.tickerid, "1D", open[start_day_index])
