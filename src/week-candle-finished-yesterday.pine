@@ -1,7 +1,7 @@
 // This Pine Script® code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
 // © chaise_cogent
 //
-// Script version = 3.0
+// Script version = 3.1-show-virtual-week-ohlc-on-real-candle
 // The script slides start/end dates of 1-week candles forward,
 // as if Yesterday the previous Week-candle closed.
 // For example, if today is Wednesday — then virtual weeks
@@ -9,6 +9,8 @@
 
 //@version=6
 indicator('Week candle closed yesterday', overlay=false)
+
+show_on_real = input.bool(false, 'Show virtual levels on real candles?')
 
 bull_color = input.color(color.new(color.green, 20), title = 'Bullish Candle')
 bear_color = input.color(color.new(color.red, 20), title = 'Bearish Candle')
@@ -49,16 +51,16 @@ plotcandle(custom_open, custom_high, custom_low, custom_close,
   bordercolor = candle_color,
   title = 'OHLC', force_overlay = false)
 
-plot(week_custom_open, style=plot.style_circles, color = color.green, linewidth = 2,
-  force_overlay = true)
-plot(week_custom_high, style=plot.style_circles, color = color.maroon, linewidth = 2,
-  force_overlay = true)
-plot(week_custom_low, style=plot.style_circles, color = color.blue, linewidth = 2,
-  force_overlay = true)
-plot(week_custom_close, style=plot.style_circles, color = color.red, linewidth = 2,
-  force_overlay = true)
+plot(show_on_real ? week_custom_open : na, style=plot.style_circles, color = color.green, linewidth = 2,
+  force_overlay = true, title = 'virt open')
+plot(show_on_real ? week_custom_high : na, style=plot.style_circles, color = color.maroon, linewidth = 2,
+  force_overlay = true, title = 'virt high')
+plot(show_on_real ? week_custom_low : na, style=plot.style_circles, color = color.blue, linewidth = 2,
+  force_overlay = true, title = 'virt low')
+plot(show_on_real ? week_custom_close : na, style=plot.style_circles, color = color.red, linewidth = 2,
+  force_overlay = true, title = 'virt close')
 
-// Shows dates of the previous closed week-candle
+// Shows start/end dates of the previous closed week-candle
 if barstate.islast
     table_settings = table.new(position.bottom_right,
       columns = 2, rows = 3, border_width = 1,
