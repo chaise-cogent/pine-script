@@ -1,0 +1,78 @@
+// This Pine Script® code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © chaise_cogent
+//
+// Script version = 3.0
+// The script slides start/end dates of 1-week candles forward,
+// as if Yesterday the previous Week-candle closed.
+// For example, if today is Wednesday — then virtual weeks
+// open on Saturdays and close on Tuesdays.
+
+//@version=6
+indicator('Week candle closed yesterday', overlay=false)
+
+bull_color = input.color(color.new(color.green, 20), title = 'Bullish Candle')
+bear_color = input.color(color.new(color.red, 20), title = 'Bearish Candle')
+
+week_custom_open = request.security(syminfo.tickerid, '1D', open[7])
+week_custom_high = request.security(syminfo.tickerid, '1D', ta.highest(high[1], 7))
+week_custom_low = request.security(syminfo.tickerid, '1D', ta.lowest(low[1], 7))
+week_custom_close = request.security(syminfo.tickerid, '1D', close[1])
+
+var series float custom_open = na
+var series float custom_close = na
+var series float custom_high = na
+var series float custom_low = na
+
+if timeframe.isweekly and timeframe.multiplier == 1
+    custom_open := week_custom_open
+    custom_high := week_custom_high
+    custom_low := week_custom_low
+    custom_close := week_custom_close
+else
+    custom_open := open
+    custom_high := high
+    custom_low := low
+    custom_close := close
+
+is_green = custom_open <= custom_close
+candle_color = is_green ? bull_color : bear_color
+
+get_date_human_readable(simple int days_back = 0) =>
+    // Returns date in ISO-format specified days ago: '2025-12-31'
+    _today_midnight = timestamp(
+      year(timenow), month(timenow), dayofmonth(timenow), 0, 0, 0)
+    _yesterday_midnight = _today_midnight - days_back * 24 * 3600 * 1000
+    str.format_time(_yesterday_midnight, 'yyyy-MM-dd', syminfo.timezone)
+
+plotcandle(custom_open, custom_high, custom_low, custom_close,
+  color = candle_color, wickcolor = candle_color,
+  bordercolor = candle_color,
+  title = 'OHLC', force_overlay = false)
+
+plot(week_custom_open, style=plot.style_circles, color = color.green, linewidth = 2,
+  force_overlay = true)
+plot(week_custom_high, style=plot.style_circles, color = color.maroon, linewidth = 2,
+  force_overlay = true)
+plot(week_custom_low, style=plot.style_circles, color = color.blue, linewidth = 2,
+  force_overlay = true)
+plot(week_custom_close, style=plot.style_circles, color = color.red, linewidth = 2,
+  force_overlay = true)
+
+// Shows dates of the previous closed week-candle
+if barstate.islast
+    table_settings = table.new(position.bottom_right,
+      columns = 2, rows = 3, border_width = 1,
+      border_color = color.white, bgcolor = color.new(color.black, 20),
+      force_overlay = false)
+
+    table.clear(table_settings, start_column = 0, start_row = 0,
+      end_column = 1, end_row = 2)
+    table.cell(table_settings, 0, 0, 'Last (virtual) week',
+      text_color = color.white, text_formatting = text.format_bold)
+    table.merge_cells(table_settings, start_column = 0, start_row = 0,
+      end_column = 1, end_row = 0)
+    table.cell(table_settings, 0, 1, 'Started', text_formatting = text.format_bold, text_color = color.white)
+    table.cell(table_settings, 1, 1, 'Last day', text_formatting = text.format_bold, text_color = color.white)
+
+    table.cell(table_settings, 0, 2, get_date_human_readable(7), text_color = color.white)
+    table.cell(table_settings, 1, 2, get_date_human_readable(1), text_color = color.white)
