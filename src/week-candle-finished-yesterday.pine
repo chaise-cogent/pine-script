@@ -1,7 +1,7 @@
 // This Pine Script® code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
 // © chaise_cogent
 //
-// Script version = 3.2.1-fix-workaround-last-bar-gap
+// Script version = 4.0-fix-wrong-candles
 // The script slides start/end dates of 1-week candles forward,
 // as if Yesterday the previous Week-candle closed.
 // For example, if today is Wednesday —- then virtual weeks
@@ -10,7 +10,7 @@
 //@version=6
 indicator('Week candle closed yesterday', overlay=false)
 
-var simple int STRANGE_CONST_HOURS = 5 // TODO: works only with this, but WHY? Used my timezone
+// TODO: check candles at time from 12:00am until time of your timezone -- for positive timezones
 
 show_on_real = input.bool(false, 'Show virtual levels on real 1W candles?')
 bull_color = input.color(color.new(color.green, 20), title = 'Bullish Candle')
@@ -24,15 +24,22 @@ get_date_human_readable(simple int days_back = 0) =>
     _yesterday_midnight = _today_midnight - days_back * 24 * 3600 * 1000
     str.format_time(_yesterday_midnight, 'yyyy-MM-dd', syminfo.timezone)
 
-var int daily_index =
+last_week_custom_open = request.security(syminfo.tickerid, '1D', open[7])
+last_week_custom_high = request.security(syminfo.tickerid, '1D', ta.highest(high[1], 7))
+last_week_custom_low = request.security(syminfo.tickerid, '1D', ta.lowest(low[1], 7))
+last_week_custom_close = request.security(syminfo.tickerid, '1D', close[1])
+
+var int previous_weeks_daily_index =
+  dayofweek(timenow) == dayofweek.sunday or
   dayofweek(timenow) == dayofweek.monday or
-  hour(timenow) < STRANGE_CONST_HOURS or
   false ?
-  0 : 1
-week_custom_open = request.security(syminfo.tickerid, '1D', open[daily_index + 6])
-week_custom_high = request.security(syminfo.tickerid, '1D', ta.highest(high[daily_index], 7))
-week_custom_low = request.security(syminfo.tickerid, '1D', ta.lowest(low[daily_index], 7))
-week_custom_close = request.security(syminfo.tickerid, '1D', close[daily_index])
+  1 :
+  9 - dayofweek(timenow) // Tue(3) => index=6, Wed(4) => index=5, ..., Sat(7) => index=2
+log.info('date={0}, dayofweek={1}', get_date_human_readable(), dayofweek(timenow))
+before_last_week_custom_open = request.security(syminfo.tickerid, '1D', open[previous_weeks_daily_index + 6])
+before_last_week_custom_high = request.security(syminfo.tickerid, '1D', ta.highest(high[previous_weeks_daily_index], 7))
+before_last_week_custom_low = request.security(syminfo.tickerid, '1D', ta.lowest(low[previous_weeks_daily_index], 7))
+before_last_week_custom_close = request.security(syminfo.tickerid, '1D', close[previous_weeks_daily_index])
 
 series float custom_open = na
 series float custom_close = na
@@ -40,16 +47,16 @@ series float custom_high = na
 series float custom_low = na
 
 if is_one_week_timeframe
-    if dayofweek(timenow) == dayofweek.monday and barstate.islast
-        custom_open := na
-        custom_high := na
-        custom_low := na
-        custom_close := na
+    if barstate.islast
+        custom_open := last_week_custom_open
+        custom_high := last_week_custom_high
+        custom_low := last_week_custom_low
+        custom_close := last_week_custom_close
     else
-        custom_open := week_custom_open
-        custom_high := week_custom_high
-        custom_low := week_custom_low
-        custom_close := week_custom_close
+        custom_open := before_last_week_custom_open
+        custom_high := before_last_week_custom_high
+        custom_low := before_last_week_custom_low
+        custom_close := before_last_week_custom_close
 else
     custom_open := open
     custom_high := high
@@ -86,10 +93,10 @@ if barstate.islast
 
 // Next lines are only supplementing 
 // Plotting virtual candle's levels on real candles
-week_open_conditional = show_on_real and is_one_week_timeframe ? week_custom_open : na
-week_high_conditional = show_on_real and is_one_week_timeframe ? week_custom_high : na
-week_low_conditional = show_on_real and is_one_week_timeframe ? week_custom_low : na
-week_close_conditional = show_on_real and is_one_week_timeframe ? week_custom_close : na
+week_open_conditional = show_on_real and is_one_week_timeframe ? custom_open : na
+week_high_conditional = show_on_real and is_one_week_timeframe ? custom_high : na
+week_low_conditional = show_on_real and is_one_week_timeframe ? custom_low : na
+week_close_conditional = show_on_real and is_one_week_timeframe ? custom_close : na
 
 plot(week_open_conditional, style=plot.style_circles, color = color.new(bull_color, 0),
   linewidth = 2, force_overlay = true, title = 'virt open')
