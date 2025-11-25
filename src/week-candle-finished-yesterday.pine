@@ -1,7 +1,7 @@
 // This Pine Script® code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
 // © chaise_cogent
 //
-// Script version = 4.0-fix-wrong-candles
+// Script version = 4.0.1-fix-wrong-candles
 // The script slides start/end dates of 1-week candles forward,
 // as if Yesterday the previous Week-candle closed.
 // For example, if today is Wednesday —- then virtual weeks
@@ -35,7 +35,7 @@ var int previous_weeks_daily_index =
   false ?
   1 :
   9 - dayofweek(timenow) // Tue(3) => index=6, Wed(4) => index=5, ..., Sat(7) => index=2
-log.info('date={0}, dayofweek={1}', get_date_human_readable(), dayofweek(timenow))
+
 before_last_week_custom_open = request.security(syminfo.tickerid, '1D', open[previous_weeks_daily_index + 6])
 before_last_week_custom_high = request.security(syminfo.tickerid, '1D', ta.highest(high[previous_weeks_daily_index], 7))
 before_last_week_custom_low = request.security(syminfo.tickerid, '1D', ta.lowest(low[previous_weeks_daily_index], 7))
