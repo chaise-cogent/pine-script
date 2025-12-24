@@ -4,6 +4,7 @@ Code is on the `src` folder:
 
 - [MACD with divergence + Leader](./src/macd-divergence.pine)
 - [Week candle finished yesterday](./src/week-candle-finished-yesterday.pine)
+- [Day candle finished hour(s) ago](./src/day-candle-finished-hours-ago.pine)
 - [ZigZag Swing Cycle average length counter](./src/zigzag-swing-cycle-avg-length.md)
 
 ## Outdated:
