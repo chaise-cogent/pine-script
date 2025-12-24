@@ -1,0 +1,94 @@
+// This Pine Script® code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © chaise_cogent
+//
+// Script version = 1.0.0
+// The script slides start/end hours of 1-day candles forward,
+// as if Day candle closed 0-3 hour ago.
+// For example, if now is 9:15am UTC —- then virtual days
+// starts at 8:00am (i.e., closest 4-hour frame to 9:15am).
+
+//@version=6
+indicator('Day candle closed hour(s) ago', overlay=false)
+
+show_on_real = input.bool(false, 'Show virtual levels on real 1D candles?')
+bull_color = input.color(color.new(color.green, 20), title = 'Bullish Candle')
+bear_color = input.color(color.new(color.gray, 20), title = 'Bearish Candle')
+is_one_day_timeframe = timeframe.isdaily and timeframe.multiplier == 1
+
+get_hour_human_readable(simple int days_back = 0) =>
+    // Returns hour as a military-time string like: '13:00'
+    _hour_truncated_to_4h = int(hour(timenow) / 4) * 4
+    _today_start = timestamp(
+      year(timenow), month(timenow), dayofmonth(timenow), _hour_truncated_to_4h, 0, 0)
+    _yesterday_start = _today_start - days_back * 24 * 3600 * 1000
+    str.format_time(_yesterday_start, 'HH:mm', syminfo.timezone)
+
+last_day_custom_open = request.security(syminfo.tickerid, '240', open[6])
+last_day_custom_high = request.security(syminfo.tickerid, '240', ta.highest(high[1], 6))
+last_day_custom_low = request.security(syminfo.tickerid, '240', ta.lowest(low[1], 6))
+last_day_custom_close = request.security(syminfo.tickerid, '240', close[1])
+
+var int previous_days_hourly_index = 6 - int(hour(timenow) / 4) 
+
+before_last_day_custom_open = request.security(syminfo.tickerid, '240', open[previous_days_hourly_index + 5])
+before_last_day_custom_high = request.security(syminfo.tickerid, '240', ta.highest(high[previous_days_hourly_index], 6))
+before_last_day_custom_low = request.security(syminfo.tickerid, '240', ta.lowest(low[previous_days_hourly_index], 6))
+before_last_day_custom_close = request.security(syminfo.tickerid, '240', close[previous_days_hourly_index])
+
+series float custom_open = na
+series float custom_close = na
+series float custom_high = na
+series float custom_low = na
+
+if is_one_day_timeframe
+    if barstate.islast
+        custom_open := last_day_custom_open
+        custom_high := last_day_custom_high
+        custom_low := last_day_custom_low
+        custom_close := last_day_custom_close
+    else
+        custom_open := before_last_day_custom_open
+        custom_high := before_last_day_custom_high
+        custom_low := before_last_day_custom_low
+        custom_close := before_last_day_custom_close
+else
+    custom_open := open
+    custom_high := high
+    custom_low := low
+    custom_close := close
+
+candle_color = custom_open <= custom_close ? bull_color : bear_color
+
+// Main plotting of the candles
+plotcandle(custom_open, custom_high, custom_low, custom_close,
+  color = candle_color, wickcolor = candle_color, bordercolor = candle_color,
+  title = 'OHLC', force_overlay = false)
+
+// Table with the last candle's dates
+if barstate.islast
+    table_settings = table.new(position.bottom_center, columns = 1, rows = 2,
+      border_color = color.white, bgcolor = color.new(color.black, 20),
+      border_width = 1, force_overlay = false)
+
+    table.clear(table_settings, start_column = 0, start_row = 0,
+      end_column = 0, end_row = 1)
+    table.cell(table_settings, 0, 0, 'Virtual day starts', text_size = size.tiny,
+      text_color = color.white, text_formatting = text.format_bold)
+    table.cell(table_settings, 0, 1, get_hour_human_readable(1) + ' UTC',
+      text_size = size.small, text_color = color.white)
+
+// Next lines are only supplementing 
+// Plotting virtual candle's levels on real candles
+day_open_conditional = show_on_real and is_one_day_timeframe ? custom_open : na
+day_high_conditional = show_on_real and is_one_day_timeframe ? custom_high : na
+day_low_conditional = show_on_real and is_one_day_timeframe ? custom_low : na
+day_close_conditional = show_on_real and is_one_day_timeframe ? custom_close : na
+
+plot(day_open_conditional, style=plot.style_circles, color = color.new(bull_color, 0),
+  linewidth = 2, force_overlay = true, title = 'virt open')
+plot(day_high_conditional, style=plot.style_circles, color = color.gray,
+  linewidth = 2, force_overlay = true, title = 'virt high')
+plot(day_low_conditional, style=plot.style_circles, color = color.gray,
+  linewidth = 2, force_overlay = true, title = 'virt low')
+plot(day_close_conditional, style=plot.style_circles, color = color.new(bear_color, 0),
+  linewidth = 2, force_overlay = true, title = 'virt close')
