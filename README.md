@@ -2,10 +2,12 @@
 
 Code is on the `src` folders.
 
+
 ## Pure math
 
 - [MACD with divergence + Leader](./src/macd-divergence.pine)
 - [ZigZag Swing Cycle average length counter](./src/zigzag-swing-cycle-avg-length.md)
+
 
 ## For ICT / Smart Money / Price Action
 
@@ -24,9 +26,7 @@ Bitcoin Address:
 bc1q5hvph855mzm0zwd4jgpt4l0gkv6de2cnt22yjw
 ```
 
-![QR code to donate BTC Bitcoin](./qr-tips-btc.png)
-
-Thank you for your generosity!
+<img src="./qr-tips-btc.png" width="382" alt="QR code to donate BTC Bitcoin">
 
 
 ## Outdated:
