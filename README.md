@@ -1,12 +1,18 @@
 # PineScript helper code/scripts
 
-Code is on the `src` folder:
+Code is on the `src` folders.
 
-- [Day candle finished hour(s) ago](./src/day-candle-finished-hours-ago.pine)
+## Pure math
+
 - [MACD with divergence + Leader](./src/macd-divergence.pine)
+- [ZigZag Swing Cycle average length counter](./src/zigzag-swing-cycle-avg-length.md)
+
+## For ICT / Smart Money / Price Action
+
+Shows virtual candles as if they has finished yesterday (for weekly/monthly candles) or several hours ago (for hourly candles):
+- [Daily candle finished hour(s) ago](./src/day-candle-finished-hours-ago.pine)
 - [Weekly candle finished yesterday](./src/week-candle-finished-yesterday.pine)
 - [Monthly candle finished yesterday](./src/monthly-candle-finished-yesterday.pine)
-- [ZigZag Swing Cycle average length counter](./src/zigzag-swing-cycle-avg-length.md)
 
 
 ## Tips
