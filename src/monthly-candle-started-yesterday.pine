@@ -1,0 +1,193 @@
+// This Pine Script® code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © chaise_cogent
+//
+// Script version = 4.2.1-table-position
+// The script slides start/end dates of 1-Month candles forward,
+// as if Yesterday the previous Monthly-candle was closed.
+
+//@version=6
+indicator('Monthly candle closed yesterday', overlay=false)
+
+enum TablePosition
+    left = 'left' 
+    center = 'center'
+    right = 'right'
+
+// TODO: check candles at time from 12:00am until time of your timezone -- for positive timezones
+show_on_real = input.bool(false, 'Show virtual levels on real 1W candles?')
+bull_color = input.color(color.new(color.green, 20), title = 'Bullish Candle')
+bear_color = input.color(color.new(color.gray, 20), title = 'Bearish Candle')
+draw_current_week = input.bool(true, title = 'Draw today\'s virtual week start?')
+day_shift = input.int(0, 'Additional day shift', minval=0, maxval=6)
+table_position = input.enum(defval = TablePosition.left, title = 'Table position', 
+  options = [TablePosition.left, TablePosition.center, TablePosition.right])
+
+is_one_month_timeframe = timeframe.ismonthly and timeframe.multiplier == 1
+
+
+get_table_position (selection) =>
+    switch selection
+        TablePosition.left => position.bottom_left
+        TablePosition.center => position.bottom_center
+        TablePosition.right => position.bottom_right
+        => na
+
+
+is_leap_year(yearNumber) =>
+    if (yearNumber % 4) != 0
+        false
+    else if (yearNumber % 100) != 0
+        true
+    else if (yearNumber % 400) == 0
+        true
+    else
+        false
+
+
+get_month_len(time_stamp) =>
+    year_number = year(time_stamp)
+    month_number = month(time_stamp)
+    int days = na
+    if month_number == 1 or month_number == 3 or month_number == 5 or
+      month_number == 7 or month_number == 8 or month_number == 10 or
+      month_number == 12
+        days := 31
+    else if month_number == 4 or month_number == 6 or month_number == 9 or
+      month_number == 11
+        days := 30
+    else // February: check for leap year
+        days := is_leap_year(year_number) ? 29 : 28
+    days
+
+
+get_date_human_readable(simple int days_back = 0) =>
+    // Returns date in ISO-format specified days ago: '2025-12-31'
+    _today_midnight = timestamp(
+      year(timenow), month(timenow), dayofmonth(timenow), 0, 0, 0)
+    _yesterday_midnight = _today_midnight - days_back * 24 * 3600 * 1000
+    str.format_time(_yesterday_midnight, 'yyyy-MM-dd', syminfo.timezone)
+
+today_day_of_month = dayofmonth(timenow)
+
+bar_time_closing_second = time_close - 1
+days_in_future_month = dayofmonth(time_close)
+days_in_month = dayofmonth(bar_time_closing_second)
+days_in_current_month = get_month_len(timenow)
+
+last_month_custom_open = request.security(syminfo.tickerid, '1D',
+  open[days_in_current_month]) // was 7
+last_month_custom_high = request.security(syminfo.tickerid, '1D',
+  ta.highest(high[1], days_in_current_month)) // was 7
+last_month_custom_low = request.security(syminfo.tickerid, '1D',
+  ta.lowest(low[1], days_in_current_month)) // was 7
+last_month_custom_close = request.security(syminfo.tickerid, '1D', close[1])
+
+var int previous_month_last_day = days_in_current_month -
+  today_day_of_month + 1
+
+before_last_month_custom_open = request.security(syminfo.tickerid, '1D',
+  open[previous_month_last_day + days_in_month - 1]) // was 6
+before_last_month_custom_high = request.security(syminfo.tickerid, '1D',
+  ta.highest(high[previous_month_last_day], days_in_month)) // was 7
+before_last_month_custom_low = request.security(syminfo.tickerid, '1D',
+  ta.lowest(low[previous_month_last_day], days_in_month)) // was 7
+before_last_month_custom_close = request.security(syminfo.tickerid, '1D',
+  close[previous_month_last_day])
+
+series float custom_open = na
+series float custom_close = na
+series float custom_high = na
+series float custom_low = na
+
+if is_one_month_timeframe
+    if barstate.islast
+        custom_open := last_month_custom_open
+        custom_high := last_month_custom_high
+        custom_low := last_month_custom_low
+        custom_close := last_month_custom_close
+    else
+        custom_open := before_last_month_custom_open
+        custom_high := before_last_month_custom_high
+        custom_low := before_last_month_custom_low
+        custom_close := before_last_month_custom_close
+else
+    custom_open := open
+    custom_high := high
+    custom_low := low
+    custom_close := close
+
+candle_color = custom_open <= custom_close ? bull_color : bear_color
+
+// Main plotting of the candles
+plotcandle(custom_open, custom_high, custom_low, custom_close,
+  color = candle_color, wickcolor = candle_color, bordercolor = candle_color,
+  title = 'OHLC', force_overlay = false)
+
+// Table with the last candle's dates
+if barstate.islast
+    table_settings = table.new(get_table_position(table_position),
+      columns = 2, rows = 3,
+      border_color = color.white, bgcolor = color.new(color.black, 20),
+      border_width = 1, force_overlay = false)
+
+    table.clear(table_settings, start_column = 0, start_row = 0,
+      end_column = 1, end_row = 2)
+    table.cell(table_settings, 0, 0, 'Last (virtual) month', text_size = size.tiny,
+      text_color = color.white, text_formatting = text.format_bold)
+    table.merge_cells(table_settings, start_column = 0, start_row = 0,
+      end_column = 1, end_row = 0)
+    table.cell(table_settings, 0, 1, 'Started', text_formatting = text.format_bold,
+      text_size = size.small, text_color = color.white)
+    table.cell(table_settings, 1, 1, 'Last day', text_formatting = text.format_bold,
+      text_size = size.small, text_color = color.white)
+    table.cell(table_settings, 0, 2, get_date_human_readable(31 - 1), // As a workaround
+      text_size = size.small, text_color = color.white)
+    table.cell(table_settings, 1, 2, get_date_human_readable(1),
+      text_size = size.small, text_color = color.white)
+
+// Next lines are only supplementing the plotting
+// of virtual candle's levels on real candles
+month_open_conditional = show_on_real and is_one_month_timeframe ? custom_open : na
+month_high_conditional = show_on_real and is_one_month_timeframe ? custom_high : na
+month_low_conditional = show_on_real and is_one_month_timeframe ? custom_low : na
+month_close_conditional = show_on_real and is_one_month_timeframe ? custom_close : na
+
+plot(month_open_conditional, style=plot.style_circles, color = color.new(bull_color, 0),
+  linewidth = 2, force_overlay = true, title = 'virt open')
+plot(month_high_conditional, style=plot.style_circles, color = color.gray,
+  linewidth = 2, force_overlay = true, title = 'virt high')
+plot(month_low_conditional, style=plot.style_circles, color = color.gray,
+  linewidth = 2, force_overlay = true, title = 'virt low')
+plot(month_close_conditional, style=plot.style_circles, color = color.new(bear_color, 0),
+  linewidth = 2, force_overlay = true, title = 'virt close')
+
+// Plotting today's candle with the current price
+draw_pseudo_candle(p_open, p_high, p_low, p_close, p_offset, color) =>
+    candle_left_x = bar_index + p_offset
+    candle_right_x = bar_index + p_offset + 1
+    body_bottom = math.min(p_open, p_close)
+    body_top = math.max(p_open, p_close)
+    is_green = p_open < p_close
+    bottom_wick_x = is_green ? candle_left_x : candle_right_x
+    top_wick_x = is_green ? candle_right_x : candle_left_x
+
+    box.new(candle_left_x, body_top, candle_right_x, body_bottom,
+      border_color=color, bgcolor=color)
+    line.new(bottom_wick_x, p_low, bottom_wick_x, body_bottom,
+      color=color, width=1, xloc = xloc.bar_index)
+    line.new(top_wick_x, p_high, top_wick_x, body_top,
+      color=color, width=1, xloc = xloc.bar_index)
+
+today_open = request.security(syminfo.tickerid, '1D', open)
+today_high = request.security(syminfo.tickerid, '1D', high)
+today_low = request.security(syminfo.tickerid, '1D', low)
+today_close = close
+today_color = today_open < today_close ?
+  color.new(color.lime, 40) : color.new(color.red, 30)
+
+if barstate.islast and is_one_month_timeframe
+    draw_pseudo_candle(today_open, today_high, today_low, today_close,
+      1, today_color)
+
+plot(draw_current_week and barstate.islast ? close : na, title = 'Current price',
+  color=color.gray, linewidth=1, trackprice=true, style = plot.style_stepline)
