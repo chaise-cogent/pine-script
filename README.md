@@ -15,7 +15,7 @@ Shows virtual candles as if they has finished yesterday (for weekly/monthly cand
 - [Monthly candle finished yesterday](./src/monthly-candle-finished-yesterday.pine)
 
 
-## Tips
+## Tips 🌟🙏
 
 If you find this project helpful and would like to support me, feel free to make a small donation. Your support is greatly appreciated!
 
