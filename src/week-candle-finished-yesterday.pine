@@ -11,9 +11,9 @@
 indicator('Weekly candle closed yesterday', overlay=false)
 
 enum TablePosition
-    left = 'left' // 
-    center = 'center' // position.bottom_center
-    right = 'right' // position.bottom_right
+    left = 'left'
+    center = 'center'
+    right = 'right'
 
 // TODO: check candles at time from 12:00am until time of your timezone -- for positive timezones
 show_on_real = input.bool(false, 'Show virtual levels on real 1W candles?')
